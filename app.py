@@ -1,5 +1,7 @@
-﻿# -*- coding: utf-8 -*-
-"""AI Infrastructure & Token Market Monitor - Production"""
+# -*- coding: utf-8 -*-
+"""AI Infrastructure & Token Market Monitor - Production
+近6个月主流大模型监控清单版 (2026-07-31 更新)
+"""
 import sys, os, json, urllib.request
 from datetime import date
 from flask import Flask, jsonify
@@ -20,6 +22,10 @@ GPU_MARKET = {
     "NVIDIA B200 (Blackwell)": {
         "MSRP(USD)": 40000, "Cloud/hr(USD)": 3.50, "China Proxy(USD)": 50000,
         "source": "NVIDIA GTC 2024 / Industry estimates"
+    },
+    "NVIDIA B300 (Blackwell Ultra)": {
+        "MSRP(USD)": 45000, "Cloud/hr(USD)": 4.00, "China Proxy(USD)": 56000,
+        "source": "NVIDIA / Industry estimates (2026 new)"
     },
     "NVIDIA A100 80GB SXM": {
         "MSRP(USD)": 15000, "Cloud/hr(USD)": 1.10, "China Proxy(USD)": 18000,
@@ -51,51 +57,36 @@ GPU_MARKET = {
     },
 }
 
-TOKEN_MODELS = {
-    # OpenAI
-    "gpt-4o": "GPT-4o",
-    "gpt-4o-mini": "GPT-4o Mini",
-    "gpt-4.1": "GPT-4.1",
-    "gpt-4.1-mini": "GPT-4.1 Mini",
-    "o3-mini": "OpenAI o3-mini",
-    # Anthropic
-    "claude-sonnet-4-20250514": "Claude Sonnet 4",
-    "claude-opus-4-20250514": "Claude Opus 4",
-    "vertex_ai/claude-3-5-haiku": "Claude 3.5 Haiku",
-    # Google
-    "gemini-2.5-flash": "Gemini 2.5 Flash",
-    "gemini/gemini-2.5-pro": "Gemini 2.5 Pro",
-    "gemini-2.0-flash": "Gemini 2.0 Flash",
-    # DeepSeek
-    "deepseek-chat": "DeepSeek V3",
-    "deepseek-reasoner": "DeepSeek R1",
-    # Alibaba
-    "dashscope/qwen-max": "Qwen Max",
-    "dashscope/qwen-plus": "Qwen Plus",
-    "dashscope/qwen-turbo": "Qwen Turbo",
-    # Meta
-    "deepinfra/meta-llama/Llama-4-Maverick-17B-128E-Instruct-FP8": "Llama 4 Maverick",
-    # Mistral
-    "mistral/mistral-large-latest": "Mistral Large",
-    "mistral/mistral-small-latest": "Mistral Small",
-    # Cohere
-    "command-r-plus": "Command R+",
-    # xAI
-    "xai/grok-3": "Grok 3",
-    # ByteDance (hardcoded - not in LiteLLM)
-    "_doubao_pro": "Doubao Pro 32K",
-    "_doubao_lite": "Doubao Lite 32K",
-    # Tencent (hardcoded - not in LiteLLM)
-    "_hunyuan_turbo": "Hunyuan Turbo",
-    "_hunyuan_standard": "Hunyuan Standard",
-}
+# (LiteLLM模型键, 显示名, 区域)  -- 近6个月主流流行款
+TOKEN_MODELS = [
+    # --- 国际 ---
+    ("gpt-5.6", "GPT-5.6", "intl"),
+    ("gpt-5.6-luna", "GPT-5.6 Luna", "intl"),
+    ("claude-opus-4-8", "Claude Opus 4.8", "intl"),
+    ("claude-sonnet-5", "Claude Sonnet 5", "intl"),
+    ("claude-haiku-4-5", "Claude Haiku 4.5", "intl"),
+    ("gemini-3.1-pro-preview", "Gemini 3.1 Pro", "intl"),
+    ("gemini-3.5-flash", "Gemini 3.5 Flash", "intl"),
+    ("xai/grok-4", "Grok 4", "intl"),
+    ("xai/grok-4-1-fast", "Grok 4.1 Fast", "intl"),
+    ("mistral/mistral-large-2411", "Mistral Large", "intl"),
+    # --- 国内 ---
+    ("deepseek-v4-flash", "DeepSeek V4 Flash", "china"),
+    ("deepseek-v4-pro", "DeepSeek V4 Pro", "china"),
+    ("moonshot/kimi-k2.6", "Kimi K2.6", "china"),
+    ("zai/glm-5.1", "GLM 5.1", "china"),
+    ("fireworks_ai/glm-5p2", "GLM 5.2", "china"),
+    ("openrouter/qwen/qwen3.5-397b-a17b", "Qwen3.5 397B", "china"),
+    ("novita/baidu/ernie-4.5-300b-a47b-paddle", "文心 ERNIE 4.5", "china"),
+    ("minimax/MiniMax-M2.5", "MiniMax M2.5", "china"),
+    ("_doubao_pro", "Doubao Pro 32K", "china"),
+    ("_hunyuan_turbo", "Hunyuan Turbo", "china"),
+]
 
-# Hardcoded prices for models not in LiteLLM
+# 非LiteLLM国内模型官方公开价（近似）
 HARDCODED_PRICES = {
     "_doubao_pro": {"input": 0.12, "output": 0.48, "provider": "volcengine"},
-    "_doubao_lite": {"input": 0.04, "output": 0.16, "provider": "volcengine"},
     "_hunyuan_turbo": {"input": 0.14, "output": 0.56, "provider": "tencent"},
-    "_hunyuan_standard": {"input": 0.06, "output": 0.24, "provider": "tencent"},
 }
 
 def fetch_token_prices():
@@ -121,9 +112,8 @@ def build_data():
             "source": source
         })
 
-    for model_id, display_name in TOKEN_MODELS.items():
+    for model_id, display_name, region in TOKEN_MODELS:
         prices = []
-        region = "china" if any(kw in model_id for kw in ["deepseek", "qwen", "doubao", "hunyuan", "_doubao", "_hunyuan"]) else "intl"
         cat = "llm_domestic" if region == "china" else "llm_intl"
         source = ""
 
@@ -183,7 +173,7 @@ def api_summary():
         "last_update_time": MARKET_DATA["updated"],
         "data_sources": [
             "NVIDIA MSRP + Lambda/Vast.ai cloud pricing + China proxy markup",
-            "LiteLLM open-source DB (2986 model official API pricing)",
+            "LiteLLM open-source DB (official API pricing for latest mainstream models)",
             "ByteDance/Tencent public pricing (domestic models)"
         ]
     })
