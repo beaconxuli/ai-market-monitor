@@ -1,0 +1,22 @@
+{
+  "name": "AI行情趋势监控",
+  "short_name": "AI行情监控",
+  "description": "AI基础设施及Token价格实时监控 - GPU硬件 / 大模型Token行情",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#1B1C31",
+  "theme_color": "#A149FF",
+  "icons": [
+    {
+      "src": "/static/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/static/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
