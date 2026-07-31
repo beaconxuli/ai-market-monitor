@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="manifest" href="/static/manifest.json">
+<meta name="theme-color" content="#A149FF">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="AI行情监控">
+<link rel="apple-touch-icon" href="/static/icon-192.png">
+<title>AI基础设施及Token行情分析监控系统</title>
+<script src="https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js"></script>
+<style>
+:root { --bg:#1B1C31; --p:#A149FF; --s:#FD3AFF; }
+* { margin:0; padding:0; box-sizing:border-box; }
+body {
+    font-family:"Microsoft YaHei","PingFang SC",sans-serif;
+    background:var(--bg); color:#E0E0E0; min-height:100vh; position:relative;
+}
+body::before { content:""; position:fixed; top:0;left:0;right:0;bottom:0; background:radial-gradient(ellipse at 20% 15%,rgba(161,73,255,.12) 0%,transparent 50%),radial-gradient(ellipse at 80% 30%,rgba(253,58,255,.08) 0%,transparent 50%),radial-gradient(ellipse at 50% 70%,rgba(161,73,255,.05) 0%,transparent 45%); pointer-events:none; z-index:0; }
+body::after { content:""; position:fixed; top:0;left:0;right:0;bottom:0; background-image:linear-gradient(rgba(161,73,255,.025) 1px,transparent 1px),linear-gradient(90deg,rgba(161,73,255,.025) 1px,transparent 1px); background-size:80px 80px; pointer-events:none; z-index:0; }
+
+.header { position:relative; z-index:10; background:linear-gradient(180deg,rgba(27,28,49,.98) 0%,rgba(27,28,49,.92) 100%); border-bottom:1px solid rgba(161,73,255,.15); padding:18px 32px; display:flex; justify-content:space-between; align-items:center; }
+.header::after { content:""; position:absolute; bottom:-1px; left:0; right:0; height:1px; background:linear-gradient(90deg,transparent,var(--s),var(--p),transparent); opacity:.7; }
+.header h1 { font-size:22px; color:#E0E0E0; letter-spacing:2px; text-shadow:0 0 24px rgba(161,73,255,.3); }
+.header-right { display:flex; gap:10px; align-items:center; }
+
+.btn { padding:9px 20px; border-radius:6px; cursor:pointer; font-size:13px; font-weight:600; display:inline-flex; align-items:center; gap:6px; transition:all .25s; }
+.btn-primary { background:linear-gradient(135deg,var(--p),var(--s)); color:#fff; border:none; box-shadow:0 0 16px rgba(161,73,255,.25); }
+.btn-primary:hover { box-shadow:0 0 28px rgba(253,58,255,.4); transform:translateY(-2px); }
+.btn-outline { background:transparent; border:1px solid rgba(161,73,255,.3); color:var(--p); }
+.btn-outline:hover { background:rgba(161,73,255,.08); border-color:var(--p); }
+.btn-green { background:linear-gradient(135deg,var(--p),var(--s)); color:#fff; border:none; opacity:.85; }
+.btn-green:hover { opacity:1; box-shadow:0 0 16px rgba(161,73,255,.3); }
+.btn-orange { background:linear-gradient(135deg,var(--s),var(--p)); color:#fff; border:none; font-size:14px; padding:10px 24px; font-weight:700; box-shadow:0 0 20px rgba(253,58,255,.3); animation:glow 2s infinite; }
+.btn-orange:hover { box-shadow:0 0 36px rgba(253,58,255,.55); transform:translateY(-2px); }
+@keyframes glow { 0%,100%{box-shadow:0 0 12px rgba(253,58,255,.2)} 50%{box-shadow:0 0 26px rgba(253,58,255,.45)} }
+
+.stats-bar { position:relative; z-index:5; display:flex; gap:14px; padding:22px 32px; flex-wrap:wrap; }
+.stat-card { flex:1; min-width:180px; background:linear-gradient(180deg,rgba(27,28,49,.9) 0%,rgba(27,28,49,.7) 100%); border-radius:10px; padding:20px 22px; border:1px solid rgba(161,73,255,.1); position:relative; overflow:hidden; transition:all .3s; }
+.stat-card:hover { border-color:rgba(161,73,255,.3); box-shadow:0 0 20px rgba(161,73,255,.06); transform:translateY(-3px); }
+.stat-card::before { content:""; position:absolute; left:0; top:20%; bottom:20%; width:3px; border-radius:0 3px 3px 0; background:linear-gradient(180deg,var(--p),var(--s)); }
+.stat-card .label { font-size:11px; color:rgba(224,224,224,.45); margin-bottom:6px; letter-spacing:2px; font-weight:600; position:relative; z-index:1; }
+.stat-card .value { font-size:30px; font-weight:800; color:var(--p); position:relative; z-index:1; text-shadow:0 0 10px rgba(161,73,255,.25); }
+.stat-card .sub { font-size:11px; color:rgba(224,224,224,.35); margin-top:4px; position:relative; z-index:1; }
+
+.main-content { position:relative; z-index:5; padding:0 32px 30px; }
+.section { margin-top:24px; }
+.section-title { font-size:16px; font-weight:700; color:#E0E0E0; margin-bottom:14px; padding-bottom:10px; border-bottom:1px solid rgba(161,73,255,.12); display:flex; justify-content:space-between; align-items:center; letter-spacing:1px; }
+
+.cards-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(290px,1fr)); gap:14px; margin-bottom:20px; }
+.price-card { background:linear-gradient(180deg,rgba(27,28,49,.85) 0%,rgba(27,28,49,.6) 100%); border-radius:10px; padding:18px; border:1px solid rgba(161,73,255,.07); cursor:pointer; transition:all .3s; position:relative; overflow:hidden; }
+.price-card:hover { border-color:rgba(161,73,255,.25); box-shadow:0 0 20px rgba(161,73,255,.05); transform:translateY(-3px); }
+.price-card::before { content:""; position:absolute; top:0; left:10%; right:10%; height:1px; background:linear-gradient(90deg,transparent,rgba(161,73,255,.15),transparent); transition:all .3s; }
+.price-card:hover::before { left:3%; right:3%; background:linear-gradient(90deg,transparent,rgba(253,58,255,.4),transparent); }
+.price-card .card-name { font-size:14px; font-weight:700; color:#E0E0E0; margin-bottom:10px; display:flex; align-items:center; gap:8px; }
+.region-tag { font-size:10px; padding:3px 10px; border-radius:10px; font-weight:600; }
+.region-tag.intl { background:rgba(161,73,255,.1); color:var(--p); border:1px solid rgba(161,73,255,.2); }
+.region-tag.domestic { background:rgba(253,58,255,.08); color:var(--s); border:1px solid rgba(253,58,255,.15); }
+.price-card .card-prices { display:flex; flex-wrap:wrap; gap:8px; }
+.price-tag { background:rgba(27,28,49,.5); border-radius:8px; padding:9px 12px; border:1px solid rgba(161,73,255,.05); font-size:11px; flex:1; min-width:75px; transition:all .2s; }
+.price-tag:hover { border-color:rgba(161,73,255,.15); background:rgba(161,73,255,.04); }
+.price-tag .ptype { color:rgba(224,224,224,.35); font-size:10px; }
+.price-tag .pval { color:var(--p); font-size:14px; font-weight:700; margin-top:3px; }
+
+.chart-container { width:100%; height:380px; background:linear-gradient(180deg,rgba(27,28,49,.85) 0%,rgba(27,28,49,.6) 100%); border-radius:10px; border:1px solid rgba(161,73,255,.07); margin-bottom:18px; padding:10px; }
+
+.sources-section { margin-top:20px; background:linear-gradient(180deg,rgba(27,28,49,.85) 0%,rgba(27,28,49,.6) 100%); border-radius:10px; padding:22px; border:1px solid rgba(161,73,255,.07); }
+.source-category h4 { font-size:14px; color:var(--p); margin-bottom:8px; font-weight:700; }
+.source-links { display:flex; flex-wrap:wrap; gap:6px; }
+.source-link { background:rgba(27,28,49,.5); border:1px solid rgba(161,73,255,.07); border-radius:6px; padding:7px 14px; font-size:12px; color:rgba(224,224,224,.55); text-decoration:none; transition:all .25s; font-weight:500; }
+.source-link:hover { background:rgba(161,73,255,.1); color:var(--p); border-color:rgba(161,73,255,.25); }
+
+.footer { text-align:center; padding:20px; color:rgba(224,224,224,.25); font-size:11px; border-top:1px solid rgba(161,73,255,.06); margin-top:30px; position:relative; z-index:5; }
+
+.modal-overlay { display:none; position:fixed; top:0;left:0;right:0;bottom:0; background:rgba(27,28,49,.85); z-index:100; justify-content:center; align-items:center; backdrop-filter:blur(4px); }
+.modal-overlay.active { display:flex; }
+.modal { background:linear-gradient(180deg,rgba(27,28,49,.98) 0%,rgba(27,28,49,.95) 100%); border-radius:12px; padding:28px; width:90%; max-width:500px; border:1px solid rgba(161,73,255,.12); box-shadow:0 0 40px rgba(161,73,255,.06); }
+.modal h3 { color:var(--p); margin-bottom:16px; font-size:18px; }
+.modal label { display:block; font-size:12px; color:rgba(224,224,224,.45); margin:8px 0 4px; font-weight:600; letter-spacing:1px; }
+.modal input,.modal select,.modal textarea { width:100%; padding:10px 14px; background:var(--bg); border:1px solid rgba(161,73,255,.1); border-radius:6px; color:#E0E0E0; font-size:13px; transition:border .2s; }
+.modal input:focus,.modal select:focus,.modal textarea:focus { outline:none; border-color:var(--p); box-shadow:0 0 8px rgba(161,73,255,.12); }
+.modal textarea { height:60px; resize:vertical; }
+.modal-actions { display:flex; gap:10px; margin-top:18px; justify-content:flex-end; }
+
+.toast { position:fixed; top:20px; right:20px; padding:12px 20px; border-radius:8px; color:#fff; font-size:13px; z-index:200; animation:slideIn .3s; display:none; font-weight:700; }
+.toast.success { background:linear-gradient(135deg,var(--p),var(--s)); }
+.toast.error { background:#ff4757; }
+@keyframes slideIn { from{transform:translateX(100%);opacity:0} to{transform:translateX(0);opacity:1} }
+.export-status { margin-left:10px; font-size:12px; color:var(--p); display:none; }
+@media (max-width:768px) {
+  .header { padding:12px 16px; flex-direction:column; gap:10px; }
+  .header h1 { font-size:17px; }
+  .header-right { flex-wrap:wrap; justify-content:center; }
+  .stats-bar { padding:14px 16px; }
+  .stat-card { min-width:130px; padding:14px 16px; }
+  .stat-card .value { font-size:24px; }
+  .main-content { padding:0 16px 20px; }
+  .cards-grid { grid-template-columns:1fr; }
+  .chart-container { height:280px; }
+  .btn { padding:7px 14px; font-size:12px; }
+  .btn-orange { padding:8px 16px; font-size:13px; }
+}
+</style>
+</head>
+<body>
+
+<div class="header">
+    <div>
+        <h1>AI INFRASTRUCTURE MONITOR</h1>
+        <div style="font-size:11px;color:rgba(224,224,224,.35);margin-top:3px;letter-spacing:2px;">GPU · TOKEN · MARKET INTELLIGENCE</div>
+    </div>
+    <div class="header-right">
+        <button class="btn btn-orange" onclick="openDashboard()">◈ 大屏驾驶舱</button>
+        <button class="btn btn-outline" onclick="location.href='/manage'">管理</button>
+        <button class="btn btn-green" onclick="refreshData()">刷新</button>
+        <button class="btn btn-primary" onclick="exportPDF()">导出PDF</button>
+        <span class="export-status" id="exportStatus">导出中...</span>
+    </div>
+</div>
+
+<div class="stats-bar" id="statsBar"></div>
+
+<div class="main-content">
+    <div class="section"><div class="section-title">GPU 硬件价格行情</div><div class="chart-container" id="gpuChart"></div><div class="cards-grid" id="gpuCards"></div></div>
+    <div class="section"><div class="section-title">国际大模型 Token 价格行情</div><div class="chart-container" id="intlChart"></div><div class="cards-grid" id="intlCards"></div></div>
+    <div class="section"><div class="section-title">国内大模型 Token 价格行情</div><div class="chart-container" id="domesticChart"></div><div class="cards-grid" id="domesticCards"></div></div>
+    <div class="sources-section" id="sourcesSection"></div>
+</div>
+
+<div class="footer">⚠ 数据来源于公开信息整理，仅供参考，不构成投资建议 | AI Market Monitor v1.0</div>
+
+<div class="modal-overlay" id="modal">
+    <div class="modal">
+        <h3 id="modalTitle">添加监控对象</h3><input type="hidden" id="editId">
+        <label>名称 *</label><input type="text" id="objName" placeholder="英伟达 H100">
+        <label>类别</label><select id="objCategory"><option value="gpu">GPU硬件</option><option value="llm_intl">国际大模型</option><option value="llm_domestic">国内大模型</option><option value="other">其他</option></select>
+        <label>子分类</label><input type="text" id="objSubcategory" placeholder="训练卡 / 推理卡">
+        <label>区域</label><select id="objRegion"><option value="国际">国际</option><option value="国内">国内</option></select>
+        <label>价格单位</label><input type="text" id="objUnit" placeholder="美元/小时 或 元/1M tokens">
+        <label>描述</label><textarea id="objDesc" placeholder="简要描述..."></textarea>
+        <div class="modal-actions"><button class="btn btn-outline" onclick="closeModal()">取消</button><button class="btn btn-primary" onclick="saveObject()">保存</button></div>
+    </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+const B="";async function a(u){const r=await fetch(B+u);return r.json()}async function p(u,d){const r=await fetch(B+u,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(d||{})});return r.json()}
+function t(m,s){const e=document.getElementById("toast");e.textContent=m;e.className="toast "+(s||"success");e.style.display="block";setTimeout(()=>e.style.display="none",3000)}
+function openDashboard(){window.open("/dashboard","_blank","fullscreen=yes")}
+async function ls(){const s=await a("/api/summary");document.getElementById("statsBar").innerHTML=[{l:"监控对象",v:s.object_count,sub:"GPU + Token"},{l:"今日价格记录",v:s.today_records,sub:"实时数据点"},{l:"数据来源",v:s.source_count,sub:"个渠道"},{l:"数据状态",v:s.is_fresh?"FRESH":"STALE",sub:"24h检测"},{l:"最后更新",v:s.last_update_time||"--",sub:""}].map(d=>`<div class="stat-card"><div class="label">${d.l}</div><div class="value">${d.v}</div><div class="sub">${d.sub||""}</div></div>`).join("")}
+function rc(id,d){document.getElementById(id).innerHTML=d.map(o=>{const ph=o.prices.slice(0,4).map(p=>`<div class="price-tag"><div class="ptype">${p.price_type}</div><div class="pval">${p.price_value.toFixed(2)} ${p.price_unit||""}</div></div>`).join("");return`<div class="price-card" onclick="location.href='/detail/${o.id}'"><div class="card-name">${o.name}<span class="region-tag ${o.region==="国内"?"domestic":"intl"}">${o.region}</span></div><div class="card-prices">${ph}</div></div>`}).join("")}
+function rch(cid,d,t){const c=echarts.init(document.getElementById(cid));c.setOption({title:{text:t,left:"center",textStyle:{color:"#E0E0E0",fontSize:14,fontWeight:700}},tooltip:{trigger:"axis",axisPointer:{type:"shadow"}},grid:{left:"18%",right:"5%",top:"15%",bottom:"10%"},xAxis:{type:"value",axisLabel:{color:"rgba(224,224,224,.35)",fontSize:10},axisLine:{lineStyle:{color:"rgba(161,73,255,.1)"}},splitLine:{lineStyle:{color:"rgba(161,73,255,.04)"}}},yAxis:{type:"category",data:d.map(d=>d.name),axisLabel:{color:"#E0E0E0",fontSize:10,width:140,overflow:"truncate"},axisLine:{lineStyle:{color:"rgba(161,73,255,.1)"}}},series:[{type:"bar",data:d.map(d=>({value:d.prices[0]?.price_value||0,itemStyle:{color:new echarts.graphic.LinearGradient(0,0,1,0,[{offset:0,color:"#A149FF"},{offset:1,color:"#FD3AFF"}])}})),barMaxWidth:28,barBorderRadius:[0,4,4,0]}]});window.addEventListener("resize",()=>c.resize())}
+async function lp(){const d=await a("/api/prices");[{cat:"gpu",cid:"gpuCards",ch:"gpuChart",t:"GPU硬件价格对比"},{cat:"llm_intl",cid:"intlCards",ch:"intlChart",t:"国际大模型Token Input价格对比"},{cat:"llm_domestic",cid:"domesticCards",ch:"domesticChart",t:"国内大模型Token Input价格对比"}].forEach(({cat,cid,ch,t})=>{const i=d.filter(d=>d.category===cat);rc(cid,i);if(i.length)rch(ch,i,t)})}
+async function lsrc(){const s=await a("/api/sources");let h='<div class="section-title">数据来源清单</div>';for(const[cat,rs]of Object.entries(s)){h+=`<div class="source-category"><h4>${cat}</h4>`;for(const[r,ls]of Object.entries(rs)){h+=`<div style="margin:6px 0;"><span style="color:rgba(224,224,224,.45);font-size:12px;font-weight:600;">${r}：</span><div class="source-links" style="display:inline-flex;">`;ls.forEach(l=>{h+=`<a class="source-link" href="${l.url}" target="_blank">${l.name}</a>`});h+="</div></div>"}h+="</div>"}document.getElementById("sourcesSection").innerHTML=h}
+async function rd(){t("刷新中...");const r=await p("/api/refresh");t(r.success?"刷新成功":"刷新失败",r.success?"success":"error");if(r.success)la()}
+async function ep(){const s=document.getElementById("exportStatus");s.style.display="inline";try{const r=await p("/api/export/pdf",{type:"full"});if(r.success){window.open("/api/download/"+r.filename,"_blank");t("PDF导出成功")}else t("导出失败","error")}catch(e){t("导出失败","error")}s.style.display="none"}
+function la(){ls();lp();lsrc()}la();
+</script>
+<script>
+if ("serviceWorker" in navigator) {
+  navigator.serviceWorker.register("/static/sw.js").then(() => console.log("SW registered"));
+}
+</script>
+</body>
+</html>
+
