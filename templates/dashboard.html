@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="manifest" href="/static/manifest.json">
+<meta name="theme-color" content="#A149FF">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="AI行情监控">
+<link rel="apple-touch-icon" href="/static/icon-192.png">
+<title>AI行情大屏驾驶舱</title>
+<script src="https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js"></script>
+<style>
+:root { --bg:#1B1C31; --p:#A149FF; --s:#FD3AFF; }
+* { margin:0; padding:0; box-sizing:border-box; }
+body { font-family:"Microsoft YaHei","PingFang SC",sans-serif; background:var(--bg); color:#E0E0E0; min-height:100vh; overflow-x:hidden; }
+body::before { content:""; position:fixed; top:0;left:0;right:0;bottom:0; background:radial-gradient(ellipse at 20% 50%,rgba(161,73,255,.15) 0%,transparent 60%),radial-gradient(ellipse at 80% 20%,rgba(253,58,255,.1) 0%,transparent 55%),radial-gradient(ellipse at 50% 80%,rgba(161,73,255,.08) 0%,transparent 50%); pointer-events:none; z-index:0; }
+
+.top-bar { position:relative; z-index:10; background:linear-gradient(180deg,rgba(27,28,49,.98) 0%,rgba(27,28,49,.9) 100%); border-bottom:1px solid rgba(161,73,255,.15); padding:14px 30px; display:flex; justify-content:space-between; align-items:center; }
+.top-bar::after { content:""; position:absolute; bottom:-1px; left:0; right:0; height:1px; background:linear-gradient(90deg,transparent,var(--s),var(--p),transparent); opacity:.7; }
+.top-bar .title-group { display:flex; align-items:center; gap:16px; }
+.top-bar .main-title { font-size:26px; font-weight:800; letter-spacing:3px; color:var(--p); text-shadow:0 0 20px rgba(161,73,255,.4); }
+.top-bar .subtitle { font-size:12px; color:rgba(224,224,224,.35); letter-spacing:2px; }
+.top-bar .time-display { font-size:28px; font-weight:700; color:var(--p); font-family:"Consolas","Courier New",monospace; letter-spacing:2px; }
+.top-bar .date-display { font-size:12px; color:rgba(224,224,224,.35); text-align:right; }
+.top-bar .btn-back { padding:8px 18px; border:1px solid rgba(161,73,255,.3); border-radius:6px; background:transparent; color:var(--p); cursor:pointer; font-size:13px; font-weight:600; transition:all .3s; text-decoration:none; }
+.top-bar .btn-back:hover { background:rgba(161,73,255,.1); border-color:var(--p); box-shadow:0 0 20px rgba(161,73,255,.1); }
+
+.dashboard-grid { position:relative; z-index:5; display:grid; grid-template-columns:1fr 1fr 1fr; gap:14px; padding:16px 20px; max-width:1920px; margin:0 auto; }
+
+.panel { background:linear-gradient(180deg,rgba(27,28,49,.85) 0%,rgba(27,28,49,.65) 100%); border:1px solid rgba(161,73,255,.07); border-radius:10px; padding:16px; position:relative; overflow:hidden; transition:all .3s; }
+.panel:hover { border-color:rgba(161,73,255,.2); }
+.panel::before { content:""; position:absolute; top:0; left:20px; right:20px; height:1px; background:linear-gradient(90deg,transparent,rgba(161,73,255,.2),transparent); }
+.panel .panel-title { font-size:14px; font-weight:700; color:#E0E0E0; margin-bottom:12px; display:flex; align-items:center; gap:8px; padding-bottom:10px; border-bottom:1px solid rgba(161,73,255,.05); letter-spacing:1px; }
+.panel .panel-title .dot { width:6px; height:6px; border-radius:50%; background:var(--p); box-shadow:0 0 8px var(--p); }
+.panel .panel-body { position:relative; z-index:2; }
+.panel.span-2 { grid-column:span 2; }
+.panel.span-3 { grid-column:span 3; }
+
+.kpi-row { grid-column:1/-1; display:flex; gap:14px; flex-wrap:wrap; }
+.kpi-card { flex:1; min-width:200px; background:linear-gradient(180deg,rgba(27,28,49,.9) 0%,rgba(27,28,49,.7) 100%); border:1px solid rgba(161,73,255,.1); border-radius:10px; padding:20px 24px; position:relative; overflow:hidden; transition:all .3s; }
+.kpi-card:hover { transform:translateY(-3px); border-color:rgba(161,73,255,.25); box-shadow:0 0 20px rgba(161,73,255,.05); }
+.kpi-card .kpi-icon { font-size:32px; margin-bottom:6px; }
+.kpi-card .kpi-label { font-size:11px; color:rgba(224,224,224,.35); letter-spacing:2px; }
+.kpi-card .kpi-value { font-size:36px; font-weight:800; color:var(--p); margin:4px 0; text-shadow:0 0 12px rgba(161,73,255,.25); }
+.kpi-card .kpi-sub { font-size:11px; color:rgba(224,224,224,.25); }
+.kpi-card::after { content:""; position:absolute; bottom:0; left:10%; right:10%; height:1px; background:linear-gradient(90deg,transparent,var(--p),transparent); opacity:.3; }
+
+.chart-inner { width:100%; height:100%; min-height:260px; }
+.mini-list { max-height:280px; overflow-y:auto; }
+.mini-list::-webkit-scrollbar { width:3px; }
+.mini-list::-webkit-scrollbar-thumb { background:rgba(161,73,255,.15); border-radius:2px; }
+.mini-list-item { display:flex; justify-content:space-between; align-items:center; padding:8px 10px; border-bottom:1px solid rgba(161,73,255,.035); font-size:12px; transition:background .2s; }
+.mini-list-item:hover { background:rgba(161,73,255,.03); }
+.mini-list-item .item-name { color:#E0E0E0; }
+.mini-list-item .item-val { font-weight:700; color:var(--p); }
+.item-up { color:#10b981; } .item-down { color:#ff4757; }
+
+.ticker-bar { grid-column:1/-1; background:rgba(161,73,255,.025); border:1px solid rgba(161,73,255,.08); border-radius:6px; padding:8px 16px; display:flex; align-items:center; gap:12px; font-size:11px; color:rgba(224,224,224,.35); overflow:hidden; }
+.ticker-bar .ticker-label { color:var(--p); font-weight:700; white-space:nowrap; padding-right:12px; border-right:1px solid rgba(161,73,255,.12); }
+.ticker-bar .ticker-content { white-space:nowrap; overflow:hidden; animation:sl 30s linear infinite; }
+@keyframes sl { 0%{transform:translateX(0)} 100%{transform:translateX(-50%)} }
+
+@media (max-width:1200px){.dashboard-grid{grid-template-columns:1fr 1fr}.panel.span-2,.panel.span-3{grid-column:span 2}}
+@media (max-width:768px){.dashboard-grid{grid-template-columns:1fr}.panel.span-2,.panel.span-3{grid-column:span 1}.kpi-row{flex-direction:column}}
+
+.fullscreen-btn { position:fixed; bottom:20px; right:20px; z-index:100; width:44px; height:44px; border-radius:50%; background:rgba(161,73,255,.08); border:1px solid rgba(161,73,255,.2); color:var(--p); cursor:pointer; font-size:18px; display:flex; align-items:center; justify-content:center; transition:all .3s; }
+.fullscreen-btn:hover { background:rgba(161,73,255,.15); box-shadow:0 0 20px rgba(161,73,255,.15); }
+</style>
+</head>
+<body>
+<div class="top-bar"><div class="title-group"><div class="main-title">AI INFRASTRUCTURE COCKPIT</div><div class="subtitle">GPU · LLM TOKEN · MARKET INTELLIGENCE</div></div><div><div class="time-display" id="lt">--:--:--</div><div class="date-display" id="ld"></div></div><div class="top-actions"><a href="/" class="btn-back">← 返回标准模式</a></div></div>
+
+<div class="dashboard-grid">
+<div class="kpi-row" id="kr"></div>
+<div class="panel span-2"><div class="panel-title"><span class="dot"></span> GPU硬件价格对比</div><div class="panel-body"><div class="chart-inner" id="cg"></div></div></div>
+<div class="panel"><div class="panel-title"><span class="dot"></span> GPU 明细</div><div class="panel-body"><div class="mini-list" id="gl"></div></div></div>
+<div class="panel span-2"><div class="panel-title"><span class="dot"></span> 国际大模型Token 价格趋势（近90天）</div><div class="panel-body"><div class="chart-inner" id="ci"></div></div></div>
+<div class="panel"><div class="panel-title"><span class="dot"></span> 国际Token明细</div><div class="panel-body"><div class="mini-list" id="il"></div></div></div>
+<div class="panel span-2"><div class="panel-title"><span class="dot"></span> 国内大模型Token 价格趋势（近90天）</div><div class="panel-body"><div class="chart-inner" id="cd"></div></div></div>
+<div class="panel"><div class="panel-title"><span class="dot"></span> 国内Token明细</div><div class="panel-body"><div class="mini-list" id="dl"></div></div></div>
+<div class="panel"><div class="panel-title"><span class="dot"></span> 监控对象分类分布</div><div class="panel-body"><div class="chart-inner" id="cp"></div></div></div>
+<div class="panel"><div class="panel-title"><span class="dot"></span> 国际 vs 国内 Token均价</div><div class="panel-body"><div class="chart-inner" id="cr"></div></div></div>
+<div class="ticker-bar"><span class="ticker-label">REALTIME</span><div class="ticker-content" id="tc"></div></div>
+</div>
+<button class="fullscreen-btn" onclick="tf()" title="全屏">⛶</button>
+
+<script>
+const B="";async function a(u){const r=await fetch(B+u);return r.json()}
+function uc(){const n=new Date();document.getElementById("lt").textContent=n.toTimeString().slice(0,8);document.getElementById("ld").textContent=n.getFullYear()+"年"+(n.getMonth()+1)+"月"+n.getDate()+"日 星期"+["日","一","二","三","四","五","六"][n.getDay()]}setInterval(uc,1000);uc();
+function tf(){document.fullscreenElement?document.exitFullscreen():document.documentElement.requestFullscreen().catch(()=>{})}
+function rgb(d){const c=echarts.init(document.getElementById("cg"));c.setOption({tooltip:{trigger:"axis",axisPointer:{type:"shadow"}},grid:{left:"3%",right:"4%",top:"10%",bottom:"8%",containLabel:true},xAxis:{type:"category",data:d.map(d=>d.name),axisLabel:{color:"rgba(224,224,224,.35)",fontSize:10,rotate:d.length>6?30:0},axisLine:{lineStyle:{color:"rgba(161,73,255,.1)"}},axisTick:{show:false}},yAxis:{type:"value",axisLabel:{color:"rgba(224,224,224,.35)",fontSize:10},splitLine:{lineStyle:{color:"rgba(161,73,255,.04)"}}},series:[{type:"bar",data:d.map(d=>d.prices[0]?.price_value||0),barWidth:"50%",itemStyle:{borderRadius:[6,6,0,0],color:new echarts.graphic.LinearGradient(0,0,0,1,[{offset:0,color:"#FD3AFF"},{offset:1,color:"#A149FF"}])}}]});window.addEventListener("resize",()=>c.resize())}
+function rtc(did,td){const c=echarts.init(document.getElementById(did)),s=[],cs=["#A149FF","#FD3AFF","#10b981","#f59e0b","#ec4899"];let ad=[];Object.entries(td).forEach(([pt,pts],i)=>{const ds=pts.map(p=>p.date),vs=pts.map(p=>p.value);if(ds.length>ad.length)ad=ds;s.push({name:pt,type:"line",data:vs,smooth:true,symbol:"circle",symbolSize:4,lineStyle:{color:cs[i%cs.length],width:2},itemStyle:{color:cs[i%cs.length]},areaStyle:{color:new echarts.graphic.LinearGradient(0,0,0,1,[{offset:0,color:cs[i%cs.length]+"33"},{offset:1,color:"transparent"}])}})});c.setOption({tooltip:{trigger:"axis"},legend:{data:Object.keys(td),bottom:0,textStyle:{color:"rgba(224,224,224,.35)",fontSize:10},itemWidth:12,itemHeight:8},grid:{left:"3%",right:"4%",top:"10%",bottom:"12%",containLabel:true},xAxis:{type:"category",data:ad,axisLabel:{color:"rgba(224,224,224,.35)",fontSize:9,rotate:ad.length>20?45:0},axisLine:{lineStyle:{color:"rgba(161,73,255,.1)"}}},yAxis:{type:"value",axisLabel:{color:"rgba(224,224,224,.35)",fontSize:10},splitLine:{lineStyle:{color:"rgba(161,73,255,.04)"}}},series:s});window.addEventListener("resize",()=>c.resize())}
+function rpc(cc){const c=echarts.init(document.getElementById("cp")),cn={gpu:"GPU硬件",llm_intl:"国际大模型",llm_domestic:"国内大模型",other:"其他"};c.setOption({tooltip:{trigger:"item",formatter:"{b}: {c} ({d}%)"},legend:{bottom:0,textStyle:{color:"rgba(224,224,224,.35)",fontSize:10}},series:[{type:"pie",radius:["55%","80%"],center:["50%","45%"],avoidLabelOverlap:false,itemStyle:{borderRadius:6,borderColor:getComputedStyle(document.documentElement).getPropertyValue("--bg"),borderWidth:3},label:{show:false},emphasis:{label:{show:true,fontSize:16,fontWeight:"bold"}},data:Object.entries(cc).map(([k,v])=>({name:cn[k]||k,value:v})),color:["#A149FF","#FD3AFF","#10b981","#f59e0b"]}]});window.addEventListener("resize",()=>c.resize())}
+function rrc(id,id2){const c=echarts.init(document.getElementById("cr")),iAvg=id.length?(id.reduce((s,d)=>s+(d.prices[0]?.price_value||0),0)/id.length).toFixed(2):0,dAvg=id2.length?(id2.reduce((s,d)=>s+(d.prices[0]?.price_value||0),0)/id2.length).toFixed(2):0;c.setOption({tooltip:{trigger:"axis"},grid:{left:"3%",right:"4%",top:"15%",bottom:"8%",containLabel:true},xAxis:{type:"category",data:["国际Token均价","国内Token均价"],axisLabel:{color:"#E0E0E0",fontSize:13,fontWeight:"bold"},axisLine:{lineStyle:{color:"rgba(161,73,255,.1)"}}},yAxis:{type:"value",axisLabel:{color:"rgba(224,224,224,.35)"},splitLine:{lineStyle:{color:"rgba(161,73,255,.04)"}}},series:[{type:"bar",data:[{value:parseFloat(iAvg),itemStyle:{color:new echarts.graphic.LinearGradient(0,0,0,1,[{offset:0,color:"#FD3AFF"},{offset:1,color:"#A149FF"}])}},{value:parseFloat(dAvg),itemStyle:{color:new echarts.graphic.LinearGradient(0,0,0,1,[{offset:0,color:"#f59e0b"},{offset:1,color:"#7c2d12"}])}}],barWidth:"50%",itemStyle:{borderRadius:[8,8,0,0]},label:{show:true,position:"top",color:"#E0E0E0",fontSize:14,fontWeight:"bold",formatter:"{c}"}}]});window.addEventListener("resize",()=>c.resize())}
+function rml(cid,d){document.getElementById(cid).innerHTML=d.map(d=>{const p=d.prices[0];return`<div class="mini-list-item" onclick="window.open('/detail/${d.id}','_blank')" style="cursor:pointer"><span class="item-name">${d.name}</span><span class="item-val">${p?p.price_value.toFixed(2):"-"} ${p?.price_unit||""}</span></div>`}).join("")}
+function rtk(d){const i=d.flatMap(d=>d.prices.slice(0,2).map(p=>`${d.name} · ${p.price_type}: ${p.price_value.toFixed(2)} ${p.price_unit||""}`));document.getElementById("tc").textContent=i.join("  ║  ")+"  ║  "+i.join("  ║  ")}
+async function la(){const sm=await a("/api/summary"),d=await a("/api/prices"),gpu=d.filter(d=>d.category==="gpu"),itl=d.filter(d=>d.category==="llm_intl"),dom=d.filter(d=>d.category==="llm_domestic");const ap=d.flatMap(d=>d.prices.map(p=>p.price_value)).filter(v=>v>0),avg=ap.length?(ap.reduce((a,b)=>a+b,0)/ap.length).toFixed(2):"--",mx=ap.length?Math.max(...ap).toFixed(2):"--";document.getElementById("kr").innerHTML=[{i:"◆",l:"MONITOR OBJECTS",v:sm.object_count,s:"GPU + Token"},{i:"◇",l:"TODAY RECORDS",v:sm.today_records,s:"Data Points"},{i:"◈",l:"AVG INDEX",v:avg,s:"Average Price"},{i:"⬙",l:"PRICE PEAK",v:mx,s:"Current Max"},{i:"◉",l:"LAST UPDATE",v:sm.last_update_time||"--",s:sm.is_fresh?"FRESH":"STALE"}].map(d=>`<div class="kpi-card"><div class="kpi-icon">${d.i}</div><div class="kpi-label">${d.l}</div><div class="kpi-value">${d.v}</div><div class="kpi-sub">${d.s}</div></div>`).join("");if(gpu.length)rgb(gpu);rml("gl",gpu);const ti=itl.slice(0,5),td=dom.slice(0,5);const it={};for(const o of ti){try{const t=await a(`/api/trend/${o.id}?days=90`);if(t.trends)Object.assign(it,t.trends)}catch(e){}}if(Object.keys(it).length)rtc("ci",it);const dt={};for(const o of td){try{const t=await a(`/api/trend/${o.id}?days=90`);if(t.trends)Object.assign(dt,t.trends)}catch(e){}}if(Object.keys(dt).length)rtc("cd",dt);rml("il",itl);rml("dl",dom);rpc({gpu:gpu.length,llm_intl:itl.length,llm_domestic:dom.length});rrc(itl,dom);rtk(d)}la();setInterval(la,300000);
+window.addEventListener("resize",()=>{["cg","ci","cd","cp","cr"].forEach(id=>{const c=echarts.getInstanceByDom(document.getElementById(id));if(c)c.resize()})});
+</script>
+<script>
+if ("serviceWorker" in navigator) {
+  navigator.serviceWorker.register("/static/sw.js").then(() => console.log("SW registered"));
+}
+</script>
+</body>
+</html>
+
