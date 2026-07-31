@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="manifest" href="/static/manifest.json">
+<meta name="theme-color" content="#A149FF">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="AI行情监控">
+<link rel="apple-touch-icon" href="/static/icon-192.png">
+<title>管理监控对象 - AI行情监控</title>
+<style>
+:root { --bg:#1B1C31; --p:#A149FF; --s:#FD3AFF; }
+* { margin:0; padding:0; box-sizing:border-box; }
+body { font-family:"Microsoft YaHei","PingFang SC",sans-serif; background:var(--bg); color:#E0E0E0; min-height:100vh; position:relative; }
+body::before { content:""; position:fixed; top:0;left:0;right:0;bottom:0; background:radial-gradient(ellipse at 20% 15%,rgba(161,73,255,.12) 0%,transparent 50%),radial-gradient(ellipse at 80% 30%,rgba(253,58,255,.08) 0%,transparent 50%); pointer-events:none; z-index:0; }
+body::after { content:""; position:fixed; top:0;left:0;right:0;bottom:0; background-image:linear-gradient(rgba(161,73,255,.025) 1px,transparent 1px),linear-gradient(90deg,rgba(161,73,255,.025) 1px,transparent 1px); background-size:80px 80px; pointer-events:none; z-index:0; }
+
+.header { position:relative; z-index:10; background:linear-gradient(180deg,rgba(27,28,49,.98) 0%,rgba(27,28,49,.92) 100%); border-bottom:1px solid rgba(161,73,255,.15); padding:14px 25px; display:flex; justify-content:space-between; align-items:center; }
+.header::after { content:""; position:absolute; bottom:-1px; left:0; right:0; height:1px; background:linear-gradient(90deg,transparent,var(--s),var(--p),transparent); opacity:.7; }
+.header h2 { font-size:18px; color:#E0E0E0; }
+.btn { padding:8px 18px; border:1px solid rgba(161,73,255,.3); border-radius:6px; cursor:pointer; font-size:13px; background:transparent; color:var(--p); transition:all .2s; text-decoration:none; display:inline-flex; align-items:center; gap:5px; font-weight:600; }
+.btn:hover { background:rgba(161,73,255,.08); border-color:var(--p); }
+.btn-primary { background:linear-gradient(135deg,var(--p),var(--s)); color:#fff; border:none; box-shadow:0 0 12px rgba(161,73,255,.2); }
+.btn-primary:hover { box-shadow:0 0 20px rgba(253,58,255,.35); }
+.btn-danger { border-color:#ff4757; color:#ff4757; background:transparent; }
+.btn-danger:hover { background:#ff4757; color:#fff; }
+.btn-green { background:linear-gradient(135deg,var(--p),var(--s)); color:#fff; border:none; opacity:.85; }
+.btn-green:hover { opacity:1; }
+.btn-sm { padding:5px 14px; font-size:11px; border-radius:4px; }
+
+.content { position:relative; z-index:5; padding:20px 25px; max-width:1200px; margin:0 auto; }
+.back-link { display:inline-flex; align-items:center; gap:5px; color:rgba(224,224,224,.35); text-decoration:none; font-size:13px; margin-bottom:14px; font-weight:600; }
+.back-link:hover { color:var(--p); }
+.toolbar { display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; flex-wrap:wrap; gap:10px; }
+.filters { display:flex; gap:8px; }
+.filter-btn { padding:7px 16px; border:1px solid rgba(161,73,255,.12); border-radius:6px; cursor:pointer; font-size:13px; background:rgba(27,28,49,.5); color:rgba(224,224,224,.45); font-weight:600; transition:all .2s; }
+.filter-btn:hover,.filter-btn.active { border-color:var(--p); color:var(--p); }
+
+table { width:100%; border-collapse:collapse; background:linear-gradient(180deg,rgba(27,28,49,.85) 0%,rgba(27,28,49,.6) 100%); border-radius:10px; overflow:hidden; border:1px solid rgba(161,73,255,.07); }
+th { background:rgba(27,28,49,.9); color:var(--p); padding:12px 14px; font-size:12px; text-align:left; font-weight:700; border-bottom:1px solid rgba(161,73,255,.12); }
+td { padding:12px 14px; font-size:13px; border-bottom:1px solid rgba(161,73,255,.035); }
+tr:hover td { background:rgba(161,73,255,.03); }
+td .actions { display:flex; gap:6px; }
+
+.modal-overlay { display:none; position:fixed; top:0;left:0;right:0;bottom:0; background:rgba(27,28,49,.85); z-index:100; justify-content:center; align-items:center; backdrop-filter:blur(4px); }
+.modal-overlay.active { display:flex; }
+.modal { background:linear-gradient(180deg,rgba(27,28,49,.98) 0%,rgba(27,28,49,.95) 100%); border-radius:12px; padding:28px; width:90%; max-width:500px; border:1px solid rgba(161,73,255,.12); box-shadow:0 0 40px rgba(161,73,255,.06); }
+.modal h3 { color:var(--p); margin-bottom:16px; font-size:18px; }
+.modal label { display:block; font-size:12px; color:rgba(224,224,224,.45); margin:8px 0 4px; font-weight:600; letter-spacing:1px; }
+.modal input,.modal select,.modal textarea { width:100%; padding:10px 14px; background:var(--bg); border:1px solid rgba(161,73,255,.1); border-radius:6px; color:#E0E0E0; font-size:13px; transition:border .2s; }
+.modal input:focus,.modal select:focus,.modal textarea:focus { outline:none; border-color:var(--p); box-shadow:0 0 8px rgba(161,73,255,.12); }
+.modal textarea { height:60px; resize:vertical; }
+.modal-actions { display:flex; gap:10px; margin-top:18px; justify-content:flex-end; }
+
+.toast { position:fixed; top:20px; right:20px; padding:12px 20px; border-radius:8px; color:#fff; font-size:13px; z-index:200; animation:slideIn .3s; display:none; font-weight:700; }
+.toast.success { background:linear-gradient(135deg,var(--p),var(--s)); }
+.toast.error { background:#ff4757; }
+@keyframes slideIn { from{transform:translateX(100%);opacity:0} to{transform:translateX(0);opacity:1} }
+
+.badge { display:inline-block; padding:3px 10px; border-radius:4px; font-size:11px; font-weight:700; }
+.badge-gpu { background:rgba(161,73,255,.1); color:var(--p); border:1px solid rgba(161,73,255,.2); }
+.badge-intl { background:rgba(253,58,255,.08); color:var(--s); border:1px solid rgba(253,58,255,.15); }
+.badge-domestic { background:rgba(161,73,255,.06); color:var(--p); border:1px solid rgba(161,73,255,.1); }
+</style>
+</head>
+<body>
+<div class="header"><h2>监控对象管理</h2><div style="display:flex;gap:8px;"><a href="/dashboard" class="btn">大屏</a><a href="/" class="btn">← 返回</a></div></div>
+<div class="content">
+<a href="/" class="back-link">← 返回驾驶舱</a>
+<div class="toolbar"><div class="filters"><button class="filter-btn active" onclick="fo('')">全部</button><button class="filter-btn" onclick="fo('gpu')">GPU硬件</button><button class="filter-btn" onclick="fo('llm_intl')">国际大模型</button><button class="filter-btn" onclick="fo('llm_domestic')">国内大模型</button></div><button class="btn btn-primary" onclick="oam()">+ 添加监控对象</button></div>
+<table><thead><tr><th>ID</th><th>名称</th><th>类别</th><th>区域</th><th>单位</th><th>状态</th><th>操作</th></tr></thead><tbody id="ot"></tbody></table>
+</div>
+<div class="modal-overlay" id="md"><div class="modal"><h3 id="mt">添加监控对象</h3><input type="hidden" id="ei"><label>名称 *</label><input type="text" id="on" placeholder="英伟达 H100"><label>类别</label><select id="oc"><option value="gpu">GPU硬件</option><option value="llm_intl">国际大模型</option><option value="llm_domestic">国内大模型</option><option value="other">其他</option></select><label>子分类</label><input type="text" id="os" placeholder="训练卡 / 推理卡"><label>区域</label><select id="or"><option value="国际">国际</option><option value="国内">国内</option></select><label>价格单位</label><input type="text" id="ou" placeholder="美元/小时"><label>描述</label><textarea id="od" placeholder="简要描述..."></textarea><div class="modal-actions"><button class="btn" style="border-color:rgba(224,224,224,.15);color:rgba(224,224,224,.35);" onclick="cm()">取消</button><button class="btn btn-primary" onclick="so()">保存</button></div></div></div>
+<div class="toast" id="toast"></div>
+<script>
+const B="",cb={gpu:"badge-gpu",llm_intl:"badge-intl",llm_domestic:"badge-domestic",other:""},cn={gpu:"GPU硬件",llm_intl:"国际大模型",llm_domestic:"国内大模型",other:"其他"};let cf="",ao=[];
+async function a(u,o){const r=await fetch(B+u,o||{});return r.json()}function st(m,s){const e=document.getElementById("toast");e.textContent=m;e.className="toast "+(s||"success");e.style.display="block";setTimeout(()=>e.style.display="none",3000)}
+async function lo(){const u=cf?`/api/objects?category=${cf}`:"/api/objects";ao=await a(u);rt()}function rt(){document.getElementById("ot").innerHTML=ao.map(o=>`<tr><td>${o.id}</td><td><strong>${o.name}</strong></td><td><span class="badge ${cb[o.category]||""}">${cn[o.category]||o.category}</span></td><td>${o.region}</td><td>${o.unit||"-"}</td><td>${o.is_active?"ACTIVE":"INACTIVE"}</td><td><div class="actions"><button class="btn btn-sm btn-primary" onclick="oem(${o.id})">编辑</button><button class="btn btn-sm btn-danger" onclick="to(${o.id},${o.is_active})">${o.is_active?"停用":"启用"}</button></div></td></tr>`).join("")}
+function fo(c){cf=c;document.querySelectorAll(".filter-btn").forEach(b=>b.classList.remove("active"));event.target.classList.add("active");lo()}
+function oam(){document.getElementById("mt").textContent="添加监控对象";document.getElementById("ei").value="";document.getElementById("on").value="";document.getElementById("oc").value="gpu";document.getElementById("os").value="";document.getElementById("or").value="国际";document.getElementById("ou").value="";document.getElementById("od").value="";document.getElementById("md").classList.add("active")}
+function oem(id){const o=ao.find(o=>o.id===id);if(!o)return;document.getElementById("mt").textContent="编辑监控对象";document.getElementById("ei").value=o.id;document.getElementById("on").value=o.name;document.getElementById("oc").value=o.category;document.getElementById("os").value=o.subcategory||"";document.getElementById("or").value=o.region;document.getElementById("ou").value=o.unit||"";document.getElementById("od").value=o.description||"";document.getElementById("md").classList.add("active")}
+function cm(){document.getElementById("md").classList.remove("active")}
+async function so(){const id=document.getElementById("ei").value,data={name:document.getElementById("on").value,category:document.getElementById("oc").value,subcategory:document.getElementById("os").value,region:document.getElementById("or").value,unit:document.getElementById("ou").value,description:document.getElementById("od").value};if(!data.name){st("请输入名称","error");return}let r;r=id?await fetch(B+`/api/object/update/${id}`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(data)}).then(r=>r.json()):await fetch(B+"/api/object/add",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(data)}).then(r=>r.json());r.success?(st(id?"更新成功":"添加成功"),cm(),lo()):st("操作失败","error")}
+async function to(id,ca){const r=await fetch(B+`/api/object/update/${id}`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({is_active:ca?0:1})}).then(r=>r.json());r.success&&(st(ca?"已停用":"已启用"),lo())}lo();
+</script>
+<script>
+if ("serviceWorker" in navigator) {
+  navigator.serviceWorker.register("/static/sw.js").then(() => console.log("SW registered"));
+}
+</script>
+</body>
+</html>
+
