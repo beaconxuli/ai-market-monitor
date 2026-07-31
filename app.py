@@ -197,6 +197,15 @@ def api_refresh():
     except Exception as e:
         return jsonify({"success": False, "error": str(e)}), 500
 
+
+@app.after_request
+def add_cors(response):
+    response.headers["Access-Control-Allow-Origin"] = "*"
+    response.headers["Access-Control-Allow-Headers"] = "Content-Type"
+    response.headers["Access-Control-Allow-Methods"] = "GET,POST,OPTIONS"
+    return response
+
+
 if __name__ == "__main__":
     print("AI Market Monitor starting...")
     app.run(host="0.0.0.0", port=18888, debug=False)
