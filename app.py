@@ -23,9 +23,17 @@ GPU_MARKET = {
         "MSRP(USD)": 40000, "Cloud/hr(USD)": 3.50, "China Proxy(USD)": 50000,
         "source": "NVIDIA GTC 2024 / Industry estimates"
     },
-    "NVIDIA B300 (Blackwell Ultra)": {
-        "MSRP(USD)": 45000, "Cloud/hr(USD)": 4.00, "China Proxy(USD)": 56000,
-        "source": "NVIDIA / Industry estimates (2026 new)"
+        "NVIDIA B300 GPU 单卡 (Blackwell Ultra)": {
+        "渠道买断价(USD)": 45000, "云租(USD/时)": 4.00, "渠道价(USD)": 56000,
+        "source": "B300单卡行情估算 (2026 new)"
+    },
+    "NVIDIA B300 服务器整机 8xGPU (国际)": {
+        "官方渠道价(USD)": 550000, "2025年底价(USD)": 500000,
+        "source": "美国市场公开售价约$55万/台 (2026-04媒体报道)"
+    },
+    "NVIDIA B300 服务器整机 8xGPU (China现货)": {
+        "官方渠道价(CNY)": 4000000, "现货成交价(CNY)": 12000000, "渠道最高报价(CNY)": 14500000,
+        "source": "国内现货:2025底¥400万→2026-08涨至¥1200万+,最高报价¥1450万/台"
     },
     "NVIDIA A100 80GB SXM": {
         "MSRP(USD)": 15000, "Cloud/hr(USD)": 1.10, "China Proxy(USD)": 18000,
