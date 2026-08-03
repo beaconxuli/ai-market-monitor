@@ -4,7 +4,7 @@
 """
 import sys, os, json, urllib.request
 from datetime import date
-from flask import Flask, jsonify
+from flask import Flask, jsonify, request
 
 app = Flask(__name__)
 DATA_FILE = os.path.join(os.path.dirname(__file__), "data", "prices.json")
@@ -97,6 +97,46 @@ HARDCODED_PRICES = {
     "_hunyuan_turbo": {"input": 0.14, "output": 0.56, "provider": "tencent"},
 }
 
+HISTORY_FILE = os.path.join(os.path.dirname(__file__), "data", "history.json")
+HISTORY_DAYS = 400
+
+SEED_HISTORY = json.loads('''{"2026-07-31":[{"name":"AMD MI300X","category":"gpu","region":"intl","prices":[{"type":"China Proxy(USD)","value":18000.0,"unit":"USD"},{"type":"Cloud/hr(USD)","value":1.5,"unit":"USD"},{"type":"MSRP(USD)","value":15000.0,"unit":"USD"}]},{"name":"Huawei Ascend 910B","category":"gpu","region":"china","prices":[{"type":"China Proxy(CNY)","value":100000.0,"unit":"CNY"},{"type":"Cloud/hr(CNY)","value":35.0,"unit":"CNY"},{"type":"MSRP(CNY)","value":85000.0,"unit":"CNY"}]},{"name":"NVIDIA A100 80GB SXM","category":"gpu","region":"intl","prices":[{"type":"China Proxy(USD)","value":18000.0,"unit":"USD"},{"type":"Cloud/hr(USD)","value":1.1,"unit":"USD"},{"type":"MSRP(USD)","value":15000.0,"unit":"USD"}]},{"name":"NVIDIA B200 (Blackwell)","category":"gpu","region":"intl","prices":[{"type":"China Proxy(USD)","value":50000.0,"unit":"USD"},{"type":"Cloud/hr(USD)","value":3.5,"unit":"USD"},{"type":"MSRP(USD)","value":40000.0,"unit":"USD"}]},{"name":"NVIDIA H100 80GB SXM","category":"gpu","region":"intl","prices":[{"type":"China Proxy(USD)","value":33000.0,"unit":"USD"},{"type":"Cloud/hr(USD)","value":1.99,"unit":"USD"},{"type":"MSRP(USD)","value":28000.0,"unit":"USD"}]},{"name":"NVIDIA H200 141GB SXM","category":"gpu","region":"intl","prices":[{"type":"China Proxy(USD)","value":42000.0,"unit":"USD"},{"type":"Cloud/hr(USD)","value":2.49,"unit":"USD"},{"type":"MSRP(USD)","value":35000.0,"unit":"USD"}]},{"name":"NVIDIA H800 (China Export)","category":"gpu","region":"china","prices":[{"type":"China Proxy(USD)","value":38000.0,"unit":"USD"},{"type":"Cloud/hr(USD)","value":2.3,"unit":"USD"},{"type":"MSRP(USD)","value":32000.0,"unit":"USD"}]},{"name":"NVIDIA L40S (Inference)","category":"gpu","region":"intl","prices":[{"type":"China Proxy(USD)","value":11000.0,"unit":"USD"},{"type":"Cloud/hr(USD)","value":0.8,"unit":"USD"},{"type":"MSRP(USD)","value":9000.0,"unit":"USD"}]},{"name":"NVIDIA RTX 4090","category":"gpu","region":"intl","prices":[{"type":"China Proxy(USD)","value":1950.0,"unit":"USD"},{"type":"Cloud/hr(USD)","value":0.35,"unit":"USD"},{"type":"MSRP(USD)","value":1599.0,"unit":"USD"}]},{"name":"NVIDIA RTX 6000 Ada","category":"gpu","region":"intl","prices":[{"type":"China Proxy(USD)","value":8200.0,"unit":"USD"},{"type":"Cloud/hr(USD)","value":0.65,"unit":"USD"},{"type":"MSRP(USD)","value":6800.0,"unit":"USD"}]}],"2026-08-01":[{"name":"AMD MI300X","category":"gpu","region":"intl","prices":[{"type":"China Proxy(USD)","value":18000.0,"unit":"USD"},{"type":"Cloud/hr(USD)","value":1.5,"unit":"USD"},{"type":"MSRP(USD)","value":15000.0,"unit":"USD"}]},{"name":"Huawei Ascend 910B","category":"gpu","region":"china","prices":[{"type":"China Proxy(CNY)","value":100000.0,"unit":"CNY"},{"type":"Cloud/hr(CNY)","value":35.0,"unit":"CNY"},{"type":"MSRP(CNY)","value":85000.0,"unit":"CNY"}]},{"name":"NVIDIA A100 80GB SXM","category":"gpu","region":"intl","prices":[{"type":"China Proxy(USD)","value":18000.0,"unit":"USD"},{"type":"Cloud/hr(USD)","value":1.1,"unit":"USD"},{"type":"MSRP(USD)","value":15000.0,"unit":"USD"}]},{"name":"NVIDIA B200 (Blackwell)","category":"gpu","region":"intl","prices":[{"type":"China Proxy(USD)","value":50000.0,"unit":"USD"},{"type":"Cloud/hr(USD)","value":3.5,"unit":"USD"},{"type":"MSRP(USD)","value":40000.0,"unit":"USD"}]},{"name":"NVIDIA H100 80GB SXM","category":"gpu","region":"intl","prices":[{"type":"China Proxy(USD)","value":33000.0,"unit":"USD"},{"type":"Cloud/hr(USD)","value":1.99,"unit":"USD"},{"type":"MSRP(USD)","value":28000.0,"unit":"USD"}]},{"name":"NVIDIA H200 141GB SXM","category":"gpu","region":"intl","prices":[{"type":"China Proxy(USD)","value":42000.0,"unit":"USD"},{"type":"Cloud/hr(USD)","value":2.49,"unit":"USD"},{"type":"MSRP(USD)","value":35000.0,"unit":"USD"}]},{"name":"NVIDIA H800 (China Export)","category":"gpu","region":"china","prices":[{"type":"China Proxy(USD)","value":38000.0,"unit":"USD"},{"type":"Cloud/hr(USD)","value":2.3,"unit":"USD"},{"type":"MSRP(USD)","value":32000.0,"unit":"USD"}]},{"name":"NVIDIA L40S (Inference)","category":"gpu","region":"intl","prices":[{"type":"China Proxy(USD)","value":11000.0,"unit":"USD"},{"type":"Cloud/hr(USD)","value":0.8,"unit":"USD"},{"type":"MSRP(USD)","value":9000.0,"unit":"USD"}]},{"name":"NVIDIA RTX 4090","category":"gpu","region":"intl","prices":[{"type":"China Proxy(USD)","value":1950.0,"unit":"USD"},{"type":"Cloud/hr(USD)","value":0.35,"unit":"USD"},{"type":"MSRP(USD)","value":1599.0,"unit":"USD"}]},{"name":"NVIDIA RTX 6000 Ada","category":"gpu","region":"intl","prices":[{"type":"China Proxy(USD)","value":8200.0,"unit":"USD"},{"type":"Cloud/hr(USD)","value":0.65,"unit":"USD"},{"type":"MSRP(USD)","value":6800.0,"unit":"USD"}]}]}''')
+
+def load_history():
+    try:
+        with open(HISTORY_FILE, "r", encoding="utf-8") as f:
+            h = json.load(f)
+        return h if isinstance(h, dict) else {}
+    except Exception:
+        return {}
+
+def save_history(h):
+    try:
+        with open(HISTORY_FILE, "w", encoding="utf-8") as f:
+            json.dump(h, f, ensure_ascii=False)
+    except Exception as e:
+        print("[HIST] save failed: " + str(e))
+
+def record_daily_snapshot(data):
+    today = date.today().isoformat()
+    h = load_history()
+    if not h:
+        h = {k: v for k, v in SEED_HISTORY.items()}
+    if today in h:
+        return
+    snapshot = []
+    for item in data["gpu"] + data["token"]:
+        snapshot.append({
+            "name": item["name"],
+            "category": item["category"],
+            "region": item.get("region", ""),
+            "prices": item["prices"],
+        })
+    h[today] = snapshot
+    keys = sorted(h.keys())[-HISTORY_DAYS:]
+    h = {k: h[k] for k in keys}
+    save_history(h)
+
 def fetch_token_prices():
     try:
         r = urllib.request.urlopen(
@@ -151,6 +191,7 @@ def build_data():
 
     with open(DATA_FILE, "w", encoding="utf-8") as f:
         json.dump(data, f, ensure_ascii=False)
+    record_daily_snapshot(data)
     return data
 
 try:
@@ -194,6 +235,31 @@ def api_refresh():
         return jsonify({"success": True})
     except Exception as e:
         return jsonify({"success": False, "error": str(e)}), 500
+
+
+@app.route("/api/trend/<path:name>")
+def api_trend(name):
+    days = request.args.get("days", 30, type=int)
+    days = max(1, min(days, 365))
+    h = load_history()
+    dates = sorted(h.keys())[-days:]
+    trends = {}
+    obj = None
+    for d in dates:
+        for it in h.get(d, []):
+            if it.get("name") == name:
+                if obj is None:
+                    obj = {"name": it["name"], "category": it["category"],
+                           "region": it.get("region", ""), "prices": it["prices"], "unit": ""}
+                for p in it["prices"]:
+                    trends.setdefault(p["type"], []).append({"date": d, "value": p["value"]})
+    if obj is None:
+        for it in MARKET_DATA["gpu"] + MARKET_DATA["token"]:
+            if it.get("name") == name:
+                obj = it
+        if obj is None:
+            return jsonify({"object": None, "trends": {}}), 404
+    return jsonify({"object": obj, "trends": trends})
 
 
 @app.after_request
